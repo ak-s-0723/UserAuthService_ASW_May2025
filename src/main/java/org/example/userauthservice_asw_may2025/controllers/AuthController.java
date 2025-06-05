@@ -1,5 +1,6 @@
 package org.example.userauthservice_asw_may2025.controllers;
 
+import org.antlr.v4.runtime.misc.Pair;
 import org.example.userauthservice_asw_may2025.dtos.LoginRequestDto;
 import org.example.userauthservice_asw_may2025.dtos.SignupRequestDto;
 import org.example.userauthservice_asw_may2025.dtos.UserDto;
@@ -9,8 +10,11 @@ import org.example.userauthservice_asw_may2025.exceptions.UserNotRegisteredExcep
 import org.example.userauthservice_asw_may2025.models.User;
 import org.example.userauthservice_asw_may2025.services.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,9 +32,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    UserDto login(@RequestBody LoginRequestDto loginRequestDto) {
-       User user =  authService.login(loginRequestDto.getEmail(),loginRequestDto.getPassword());
-       return from(user);
+    public ResponseEntity<UserDto> login(@RequestBody LoginRequestDto loginRequestDto) {
+       Pair<User,String> userWithToken =  authService.login(loginRequestDto.getEmail(),loginRequestDto.getPassword());
+       UserDto userDto = from(userWithToken.a);
+       String token = userWithToken.b;
+       MultiValueMap<String,String> headers = new LinkedMultiValueMap<>();
+       headers.add(HttpHeaders.SET_COOKIE,token);
+       return new ResponseEntity<>(userDto,headers,HttpStatus.OK);
     }
 
     private UserDto from(User user) {

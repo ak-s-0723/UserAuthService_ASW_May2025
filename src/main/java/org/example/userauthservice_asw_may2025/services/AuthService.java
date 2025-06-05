@@ -1,5 +1,8 @@
 package org.example.userauthservice_asw_may2025.services;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.MacAlgorithm;
+import org.antlr.v4.runtime.misc.Pair;
 import org.example.userauthservice_asw_may2025.exceptions.AccountSuspendedException;
 import org.example.userauthservice_asw_may2025.exceptions.PasswordMismatchException;
 import org.example.userauthservice_asw_may2025.exceptions.UserAlreadySignedException;
@@ -11,7 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Optional;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -38,7 +45,7 @@ public class AuthService {
     }
 
 
-    public User login(String email, String password) {
+    public Pair<User,String> login(String email, String password) {
         Optional<User> userOptional = userRepo.findByEmailEquals(email);
         if(userOptional.isEmpty()) {
            throw new UserNotRegisteredException("Please try signup first");
@@ -54,6 +61,35 @@ public class AuthService {
            throw new PasswordMismatchException("Please type correct password");
         }
 
-        return userOptional.get();
+        //Token Generation
+
+//        String message = "{\n" +
+//                "   \"email\": \"anurag@gmail.com\",\n" +
+//                "   \"roles\": [\n" +
+//                "      \"instructor\",\n" +
+//                "      \"buddy\"\n" +
+//                "   ],\n" +
+//                "   \"expirationDate\": \"2ndApril2026\"\n" +
+//                "}";
+//
+//        byte[] content = message.getBytes(StandardCharsets.UTF_8);
+
+        Map<String,Object> claims = new HashMap<>();
+        claims.put("userId",userOptional.get().getId());
+        Long nowInMillis = System.currentTimeMillis();
+        claims.put("iat",nowInMillis);
+        claims.put("exp",nowInMillis+100000);
+        claims.put("iss","authservice##");
+
+        MacAlgorithm algorithm = Jwts.SIG.HS256;
+        SecretKey secretKey = algorithm.key().build();
+
+        String token = Jwts.builder().claims(claims).signWith(secretKey).compact();
+
+        Pair<User,String> response = new Pair<>(userOptional.get(),token);
+
+        return response;
     }
 }
+
+//[k1:v1],[k2:v2],[k3:v3]
