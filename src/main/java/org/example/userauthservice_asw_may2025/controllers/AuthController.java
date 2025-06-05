@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.misc.Pair;
 import org.example.userauthservice_asw_may2025.dtos.LoginRequestDto;
 import org.example.userauthservice_asw_may2025.dtos.SignupRequestDto;
 import org.example.userauthservice_asw_may2025.dtos.UserDto;
+import org.example.userauthservice_asw_may2025.dtos.ValidateTokenRequestDto;
 import org.example.userauthservice_asw_may2025.exceptions.PasswordMismatchException;
 import org.example.userauthservice_asw_may2025.exceptions.UserAlreadySignedException;
 import org.example.userauthservice_asw_may2025.exceptions.UserNotRegisteredException;
@@ -39,6 +40,11 @@ public class AuthController {
        MultiValueMap<String,String> headers = new LinkedMultiValueMap<>();
        headers.add(HttpHeaders.SET_COOKIE,token);
        return new ResponseEntity<>(userDto,headers,HttpStatus.OK);
+    }
+
+    @PostMapping("/validateToken")
+    public Boolean validateToken(@RequestBody ValidateTokenRequestDto validateTokenRequestDto) {
+        return authService.validateToken(validateTokenRequestDto.getToken(), validateTokenRequestDto.getUserId());
     }
 
     private UserDto from(User user) {
