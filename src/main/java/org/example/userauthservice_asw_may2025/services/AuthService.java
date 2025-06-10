@@ -1,10 +1,14 @@
 package org.example.userauthservice_asw_may2025.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
 import org.antlr.v4.runtime.misc.Pair;
+import org.example.userauthservice_asw_may2025.clients.KafkaClient;
+import org.example.userauthservice_asw_may2025.dtos.EmailDto;
 import org.example.userauthservice_asw_may2025.exceptions.AccountSuspendedException;
 import org.example.userauthservice_asw_may2025.exceptions.PasswordMismatchException;
 import org.example.userauthservice_asw_may2025.exceptions.UserAlreadySignedException;
@@ -39,6 +43,12 @@ public class AuthService {
     @Autowired
     private SecretKey secretKey;
 
+    @Autowired
+    private KafkaClient kafkaClient;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     public User signup(String name, String email, String password) {
        Optional<User> userOptional = userRepo.findByEmailEquals(email);
        if(userOptional.isPresent()) {
@@ -51,6 +61,19 @@ public class AuthService {
        user.setName(name);
        user.setEmail(email);
        user.setPassword(bCryptPasswordEncoder.encode(password));
+
+       //WE WILL ADD LOGIC TO SEND WELCOME EMAIL AT THIS PLACE
+        try {
+            EmailDto emailDto = new EmailDto();
+            emailDto.setTo(email);
+            emailDto.setFrom("anuragonhiring@gmail.com");
+            emailDto.setSubject("Welcome to Scaler");
+            emailDto.setBody("Hope youn will have , good learning experience");
+            kafkaClient.sendMessage("signup", objectMapper.writeValueAsString(emailDto));
+        }catch (JsonProcessingException exception) {
+            throw new RuntimeException("something went wrong");
+        }
+
        return userRepo.save(user);
     }
 
